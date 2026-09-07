@@ -81,7 +81,7 @@ module "route_table_aks" {
 # ---------------------------------------------------------------------------
 module "vnet" {
   source  = "Azure/avm-res-network-virtualnetwork/azurerm"
-  version = "0.19.0"
+  version = "0.22.2"
 
   name          = "vnet-${local.name}-spoke"
   location      = azurerm_resource_group.network.location
