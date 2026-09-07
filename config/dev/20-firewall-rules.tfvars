@@ -1,0 +1,9 @@
+spoke_subscription_id = "00000000-0000-0000-0000-000000000000"
+hub_subscription_id   = "11111111-1111-1111-1111-111111111111"
+location              = "uaenorth"
+prefix                = "example"
+environment           = "dev"
+
+firewall_policy_id           = "/subscriptions/1111.../resourceGroups/rg-hub-network/providers/Microsoft.Network/firewallPolicies/afwp-hub"
+ip_group_resource_group_name = "rg-hub-network"
+aks_egress_source_cidrs      = ["10.116.12.0/24"]

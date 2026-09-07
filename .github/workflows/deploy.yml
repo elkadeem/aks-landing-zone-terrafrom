@@ -1,0 +1,68 @@
+name: Deploy AKS Landing Zone
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: Terraform action
+        type: choice
+        options: [plan, apply]
+        default: plan
+      environment:
+        description: Environment (config/<environment>)
+        type: string
+        default: dev
+  push:
+    branches: [main]
+    paths: ["**/*.tf", ".github/workflows/deploy.yml"]
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  ARM_USE_OIDC: "true"
+  ARM_USE_AZUREAD: "true"
+  ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+  ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+  ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+  TFSTATE_RG: ${{ vars.TFSTATE_RG }}
+  TFSTATE_SA: ${{ vars.TFSTATE_SA }}
+  TFSTATE_CONTAINER: ${{ vars.TFSTATE_CONTAINER }}
+  ENVIRONMENT: ${{ github.event.inputs.environment || 'dev' }}
+  ACTION: ${{ github.event.inputs.action || 'plan' }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment || 'dev' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.11.4
+          terraform_wrapper: false
+
+      - name: Terraform ${{ env.ACTION }} all stacks
+        run: |
+          set -euo pipefail
+          for STACK in 05-entra-groups 10-network 20-firewall-rules 30-supporting-services 40-aks; do
+            echo "::group::$STACK"
+            terraform -chdir="$STACK" init \
+              -backend-config="resource_group_name=$TFSTATE_RG" \
+              -backend-config="storage_account_name=$TFSTATE_SA" \
+              -backend-config="container_name=$TFSTATE_CONTAINER"
+            if [ "$ACTION" = "apply" ]; then
+              terraform -chdir="$STACK" apply -auto-approve -var-file="$GITHUB_WORKSPACE/config/$ENVIRONMENT/$STACK.tfvars"
+            else
+              terraform -chdir="$STACK" plan -var-file="$GITHUB_WORKSPACE/config/$ENVIRONMENT/$STACK.tfvars"
+            fi
+            echo "::endgroup::"
+          done

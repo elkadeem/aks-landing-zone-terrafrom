@@ -1,0 +1,58 @@
+# Deploys the AKS landing zone stacks in order.
+# Requires: a variable group 'aks-landing-zone' (TFSTATE_RG, TFSTATE_SA,
+# TFSTATE_CONTAINER, ENVIRONMENT) and an Azure service connection with
+# workload identity federation.
+
+trigger:
+  branches:
+    include: [main]
+  paths:
+    include: ["**/*.tf", azure-pipelines.yml]
+
+parameters:
+  - name: action
+    displayName: Terraform action
+    type: string
+    default: plan
+    values: [plan, apply]
+
+variables:
+  - group: aks-landing-zone
+  - name: serviceConnection
+    value: sc-aks-landing-zone
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+  - task: TerraformInstaller@1
+    inputs:
+      terraformVersion: 1.11.4
+
+  - task: AzureCLI@2
+    displayName: Terraform ${{ parameters.action }} all stacks
+    inputs:
+      azureSubscription: $(serviceConnection)
+      addSpnToEnvironment: true
+      scriptType: bash
+      scriptLocation: inlineScript
+      inlineScript: |
+        set -euo pipefail
+        export ARM_USE_OIDC=true
+        export ARM_USE_AZUREAD=true
+        export ARM_CLIENT_ID="$servicePrincipalId"
+        export ARM_OIDC_TOKEN="$idToken"
+        export ARM_TENANT_ID="$tenantId"
+        export ARM_SUBSCRIPTION_ID="$(az account show --query id -o tsv)"
+
+        for STACK in 05-entra-groups 10-network 20-firewall-rules 30-supporting-services 40-aks; do
+          terraform -chdir="$STACK" init \
+            -backend-config="resource_group_name=$(TFSTATE_RG)" \
+            -backend-config="storage_account_name=$(TFSTATE_SA)" \
+            -backend-config="container_name=$(TFSTATE_CONTAINER)"
+          if [ "${{ parameters.action }}" = "apply" ]; then
+            terraform -chdir="$STACK" apply -auto-approve -var-file="$(Build.SourcesDirectory)/config/$(ENVIRONMENT)/$STACK.tfvars"
+          else
+            terraform -chdir="$STACK" plan -var-file="$(Build.SourcesDirectory)/config/$(ENVIRONMENT)/$STACK.tfvars"
+          fi
+        done
