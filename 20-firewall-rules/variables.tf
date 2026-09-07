@@ -48,6 +48,12 @@ variable "rule_collection_group_priority" {
   default     = 500
 }
 
+variable "extra_allowed_fqdns" {
+  description = "Additional HTTPS application FQDNs to allow (merged into the extra-tools rule). Use to allow workload-specific endpoints without editing the core rules."
+  type        = list(string)
+  default     = []
+}
+
 variable "tags" {
   description = "Tags applied to the IP Group."
   type        = map(string)
