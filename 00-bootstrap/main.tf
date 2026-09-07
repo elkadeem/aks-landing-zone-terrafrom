@@ -22,7 +22,7 @@ resource "azurerm_storage_account" "state" {
   resource_group_name      = azurerm_resource_group.state.name
   location                 = azurerm_resource_group.state.location
   account_tier             = "Standard"
-  account_replication_type = "ZRS"
+  account_replication_type = "LRS"
   account_kind             = "StorageV2"
   min_tls_version          = "TLS1_2"
 
