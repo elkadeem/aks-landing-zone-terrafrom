@@ -1,0 +1,5 @@
+# Copy to terraform.tfvars and fill in. Do NOT commit real terraform.tfvars.
+spoke_subscription_id = "00000000-0000-0000-0000-000000000000"
+location              = "uaenorth"
+prefix                = "example"
+environment           = "dev"
