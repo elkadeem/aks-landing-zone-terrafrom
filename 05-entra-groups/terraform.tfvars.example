@@ -1,0 +1,7 @@
+# Copy to terraform.tfvars and fill in. Do NOT commit real terraform.tfvars.
+prefix      = "example"
+environment = "dev"
+
+# Optional initial members (Entra object IDs); can be managed outside Terraform too.
+admin_member_object_ids     = []
+developer_member_object_ids = []

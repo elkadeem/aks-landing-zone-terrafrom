@@ -22,14 +22,27 @@ data "terraform_remote_state" "supporting" {
   }
 }
 
+data "terraform_remote_state" "entra" {
+  backend = "azurerm"
+  config = {
+    resource_group_name  = var.state_resource_group_name
+    storage_account_name = var.state_storage_account_name
+    container_name       = var.state_container_name
+    key                  = "05-entra-groups.tfstate"
+    use_azuread_auth     = true
+  }
+}
+
 locals {
-  tags               = merge(var.tags, { environment = var.environment })
-  name               = "${var.prefix}-${var.environment}"
-  aks_subnet_id      = data.terraform_remote_state.network.outputs.subnet_ids["aks"]
-  network_rg_name    = data.terraform_remote_state.network.outputs.resource_group_name
-  network_rg_id      = "/subscriptions/${var.spoke_subscription_id}/resourceGroups/${local.network_rg_name}"
-  uami_id            = data.terraform_remote_state.supporting.outputs.uami_id
-  uami_principal_id  = data.terraform_remote_state.supporting.outputs.uami_principal_id
+  tags                = merge(var.tags, { environment = var.environment })
+  name                = "${var.prefix}-${var.environment}"
+  aks_subnet_id       = data.terraform_remote_state.network.outputs.subnet_ids["aks"]
+  network_rg_name     = data.terraform_remote_state.network.outputs.resource_group_name
+  network_rg_id       = "/subscriptions/${var.spoke_subscription_id}/resourceGroups/${local.network_rg_name}"
+  uami_id             = data.terraform_remote_state.supporting.outputs.uami_id
+  uami_principal_id   = data.terraform_remote_state.supporting.outputs.uami_principal_id
+  admins_group_id     = data.terraform_remote_state.entra.outputs.admins_group_object_id
+  developers_group_id = data.terraform_remote_state.entra.outputs.developers_group_object_id
 }
 
 resource "azurerm_resource_group" "aks" {
@@ -88,7 +101,7 @@ module "aks" {
     managed                = true
     enable_azure_rbac      = true
     tenant_id              = data.azurerm_client_config.current.tenant_id
-    admin_group_object_ids = var.admin_group_object_ids
+    admin_group_object_ids = concat(var.admin_group_object_ids, [local.admins_group_id])
   }
   disable_local_accounts = true
 
@@ -171,3 +184,31 @@ module "aks" {
     azurerm_role_assignment.mi_operator,
   ]
 }
+
+# ---------------------------------------------------------------------------
+# Cluster access (Azure RBAC for Kubernetes).
+# Admins get cluster-admin via aad_profile.admin_group_object_ids above.
+# Both groups need "Cluster User" to pull kubeconfig; developers get namespace
+# read/write via the RBAC Writer role.
+# ---------------------------------------------------------------------------
+resource "azurerm_role_assignment" "admins_cluster_user" {
+  scope                = module.aks.resource_id
+  role_definition_name = "Azure Kubernetes Service Cluster User Role"
+  principal_id         = local.admins_group_id
+  principal_type       = "Group"
+}
+
+resource "azurerm_role_assignment" "developers_cluster_user" {
+  scope                = module.aks.resource_id
+  role_definition_name = "Azure Kubernetes Service Cluster User Role"
+  principal_id         = local.developers_group_id
+  principal_type       = "Group"
+}
+
+resource "azurerm_role_assignment" "developers_rbac_writer" {
+  scope                = module.aks.resource_id
+  role_definition_name = "Azure Kubernetes Service RBAC Writer"
+  principal_id         = local.developers_group_id
+  principal_type       = "Group"
+}
+
