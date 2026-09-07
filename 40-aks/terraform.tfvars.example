@@ -1,0 +1,20 @@
+# Copy to terraform.tfvars and fill in. Do NOT commit real terraform.tfvars.
+spoke_subscription_id = "00000000-0000-0000-0000-000000000000"
+location              = "uaenorth"
+prefix                = "example"
+environment           = "dev"
+
+# Remote state (from 00-bootstrap outputs)
+state_resource_group_name  = "rg-example-dev-tfstate"
+state_storage_account_name = "st<...>"
+state_container_name       = "tfstate"
+
+# Cluster
+kubernetes_version                 = null      # let AKS pick default GA, or e.g. "1.31"
+private_dns_zone_mode              = "system"  # AKS-managed private DNS zone
+enable_private_cluster_public_fqdn = false
+admin_group_object_ids             = []        # Entra group object IDs for cluster admin
+
+# Node pools
+system_node_vm_size = "Standard_D4s_v5"
+user_node_vm_size   = "Standard_D4s_v5"
