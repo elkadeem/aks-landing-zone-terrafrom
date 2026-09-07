@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# Deploy the AKS landing zone. Fill the variables, then run each block.
+set -euo pipefail
+
+# ---- Variables ----
+SPOKE_SUBSCRIPTION_ID="00000000-0000-0000-0000-000000000000"
+STATE_RG="rg-example-dev-tfstate"
+STATE_SA="st<...>"        # from 00-bootstrap output
+STATE_CONTAINER="tfstate"
+
+# ---- Login ----
+az login
+az account set --subscription "$SPOKE_SUBSCRIPTION_ID"
+
+# ---- Bootstrap (creates the state storage; local state, then migrate) ----
+terraform -chdir=00-bootstrap init
+terraform -chdir=00-bootstrap apply -auto-approve
+
+# ---- Remaining stacks (remote state in the bootstrap storage account) ----
+BACKEND=(-backend-config="resource_group_name=$STATE_RG"
+         -backend-config="storage_account_name=$STATE_SA"
+         -backend-config="container_name=$STATE_CONTAINER")
+
+for STACK in 05-entra-groups 10-network 20-firewall-rules 30-supporting-services 40-aks; do
+  terraform -chdir="$STACK" init "${BACKEND[@]}"
+  terraform -chdir="$STACK" apply -auto-approve
+done
