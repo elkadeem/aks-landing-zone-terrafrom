@@ -1,0 +1,10 @@
+# Copy to terraform.tfvars and fill in. Do NOT commit real terraform.tfvars.
+subscription_id = "00000000-0000-0000-0000-000000000000"
+location        = "uaenorth"
+prefix          = "example"
+environment     = "dev"
+
+# Hub addressing (kept clear of the spoke 10.116.12.0/22)
+hub_address_space      = ["10.100.0.0/22"]
+firewall_subnet_prefix = "10.100.0.0/26"
+firewall_sku_tier      = "Standard"

@@ -10,6 +10,12 @@ How to deploy the AKS landing zone — locally, via GitHub Actions, or via Azure
 - Existing hub: Azure Firewall + firewall **policy** (with **DNS Proxy enabled**), hub VNet, and the
   Private DNS zones for ACR / Blob / Key Vault.
 
+> **No hub yet? (testing)** Use the optional `test-hub` stack to create a throwaway hub (VNet +
+> AzureFirewallSubnet, Azure Firewall + policy with DNS proxy, and the three Private DNS zones) in
+> your own subscription. Apply it after `00-bootstrap`, then copy its outputs into the spoke config
+> and set `hub_subscription_id = <your subscription>` (same subscription is fine). See
+> [Testing in a single subscription](#testing-in-a-single-subscription).
+
 ## 2. One-time bootstrap (state backend)
 
 The remote state storage account is created by `00-bootstrap` using **local** state. Run it once,
@@ -100,3 +106,35 @@ for STACK in 40-aks 30-supporting-services 20-firewall-rules 10-network 05-entra
   terraform -chdir="$STACK" destroy -var-file="config/dev/$STACK.tfvars"
 done
 ```
+
+Also destroy `test-hub` if you created it for testing.
+
+## Testing in a single subscription
+
+The `test-hub` stack provisions a disposable hub so you can exercise the whole template without an
+existing landing zone.
+
+```bash
+# after 00-bootstrap, using the same backend config
+terraform -chdir=test-hub init "${BACKEND[@]}"
+terraform -chdir=test-hub apply -var-file="config/dev/test-hub.tfvars"
+terraform -chdir=test-hub output
+```
+
+Wire the outputs into the spoke config (`config/dev/*.tfvars`), pointing the hub at the **same**
+subscription:
+
+| test-hub output | Used by | Variable |
+|---|---|---|
+| `hub_virtual_network_id` | 10-network | `hub_virtual_network_id` |
+| `hub_virtual_network_name` | 10-network | `hub_virtual_network_name` |
+| `hub_network_resource_group_name` | 10-network | `hub_network_resource_group_name` |
+| `hub_firewall_private_ip` | 10-network | `hub_firewall_private_ip` |
+| `hub_private_dns_zones` | 10-network | `hub_private_dns_zones` |
+| `firewall_policy_id` | 20-firewall-rules | `firewall_policy_id` |
+| `hub_network_resource_group_name` | 20-firewall-rules | `ip_group_resource_group_name` |
+| `hub_private_dns_zone_ids` | 30-supporting-services | `hub_private_dns_zone_ids` |
+
+Set `hub_subscription_id = <your subscription>` (equal to `spoke_subscription_id`) in the 10-network
+and 20-firewall-rules configs. Then deploy the stacks in the normal order.
+
