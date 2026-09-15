@@ -3,7 +3,10 @@ location              = "uaenorth"
 prefix                = "example"
 environment           = "dev"
 
-public_network_access_enabled = false
+# Testing: allow public network access to ACR / Storage / Key Vault so you can push
+# images and read secrets from your machine. Private endpoints are still created.
+# Set back to false for production.
+public_network_access_enabled = true
 
 state_resource_group_name  = "rg-example-dev-tfstate"
 state_storage_account_name = "st<...>"

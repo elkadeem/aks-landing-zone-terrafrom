@@ -18,5 +18,6 @@ terraform {
 
 provider "azurerm" {
   features {}
-  subscription_id = var.spoke_subscription_id
+  subscription_id     = var.spoke_subscription_id
+  storage_use_azuread = true
 }

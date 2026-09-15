@@ -28,7 +28,7 @@ resource "azurerm_storage_account" "state" {
 
   https_traffic_only_enabled      = true
   allow_nested_items_to_be_public = false
-  shared_access_key_enabled       = true
+  shared_access_key_enabled       = false
 
   blob_properties {
     versioning_enabled = true

@@ -146,6 +146,7 @@ module "aks" {
     vnet_subnet_id      = local.aks_subnet_id
     availability_zones  = var.availability_zones
     os_sku              = "AzureLinux"
+    os_disk_size_gb     = 64
     os_disk_type        = "Ephemeral"
     enable_auto_scaling = true
     min_count           = var.system_node_min
@@ -168,6 +169,7 @@ module "aks" {
       vnet_subnet_id      = local.aks_subnet_id
       availability_zones  = var.availability_zones
       os_sku              = "AzureLinux"
+      os_disk_size_gb     = 64
       os_disk_type        = "Ephemeral"
       enable_auto_scaling = true
       min_count           = var.user_node_min
@@ -211,4 +213,3 @@ resource "azurerm_role_assignment" "developers_rbac_writer" {
   principal_id         = local.developers_group_id
   principal_type       = "Group"
 }
-

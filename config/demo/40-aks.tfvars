@@ -1,10 +1,10 @@
 spoke_subscription_id = "00000000-0000-0000-0000-000000000000"
-location              = "uaenorth"
+location              = "swedencentral"
 prefix                = "example"
-environment           = "dev"
+environment           = "demo"
 
-state_resource_group_name  = "rg-example-dev-tfstate"
-state_storage_account_name = "st<...>"
+state_resource_group_name  = "rg-example-demo-tfstate"
+state_storage_account_name = "stexampledemotf12345"
 state_container_name       = "tfstate"
 
 kubernetes_version    = null
@@ -18,8 +18,8 @@ enable_private_cluster_public_fqdn = true
 # created by 05-entra-groups (wired automatically), or add extra admin groups here.
 admin_group_object_ids = []
 
-system_node_vm_size = "Standard_D4s_v5"
-user_node_vm_size   = "Standard_D4s_v5"
+system_node_vm_size = "Standard_D2ds_v5"
+user_node_vm_size   = "Standard_D2ds_v5"
 
 # Optional node-pool scaling (defaults shown):
 # system_node_min = 2
