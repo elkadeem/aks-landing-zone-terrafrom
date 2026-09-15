@@ -10,9 +10,8 @@ state_container_name       = "tfstate"
 kubernetes_version    = null
 private_dns_zone_mode = "system"
 
-# Testing: also expose a public FQDN for the private API server so kubectl works
-# from your machine without a jumpbox. Set back to false for strict-private.
-enable_private_cluster_public_fqdn = true
+# Keep the API server strictly private; access requires connectivity to the VNet.
+enable_private_cluster_public_fqdn = false
 
 # Entra group object IDs granted cluster-admin. Leave empty to use the group
 # created by 05-entra-groups (wired automatically), or add extra admin groups here.
