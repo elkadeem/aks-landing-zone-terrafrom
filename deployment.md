@@ -46,6 +46,9 @@ All stacks are applied in this order (bootstrap first, then the rest):
 00-bootstrap → 05-entra-groups → 10-network → 20-firewall-rules → 30-supporting-services → 40-aks
 ```
 
+The optional `50-api-management` stack is not part of this sequence. Deploy it separately after the
+hub and environment exist.
+
 ### Option A — Local / script
 
 ```bash
@@ -109,6 +112,39 @@ done
 
 Also destroy `test-hub` if you created it for testing.
 
+## Optional API Management deployment
+
+The `50-api-management` stack deploys one Standard v2 API Management instance in the hub
+subscription and region. It also creates a dedicated hub subnet delegated to
+`Microsoft.Web/serverFarms`, associates an NSG, and enables outbound VNet integration.
+
+Before deployment:
+
+1. Ensure the `Microsoft.ApiManagement`, `Microsoft.Network`, and `Microsoft.Web` resource
+   providers are registered in the hub subscription.
+2. Update `config/<environment>/50-api-management.tfvars` with a globally unique APIM name, a real
+   publisher email, the hub VNet details, and an unused subnet prefix. A `/24` is recommended and
+   `/27` is the minimum.
+3. Confirm the APIM instance and hub VNet use the same subscription and region.
+
+Deploy it explicitly:
+
+```bash
+terraform -chdir=50-api-management init \
+  -backend-config="resource_group_name=<state-rg>" \
+  -backend-config="storage_account_name=<state-sa>" \
+  -backend-config="container_name=tfstate"
+
+terraform -chdir=50-api-management plan \
+  -var-file="../config/<environment>/50-api-management.tfvars"
+
+terraform -chdir=50-api-management apply \
+  -var-file="../config/<environment>/50-api-management.tfvars"
+```
+
+This integration provides private outbound connectivity to backends in the hub and peered VNets.
+Standard v2 gateway, management, and developer portal endpoints remain public.
+
 ## Testing in a single subscription
 
 The `test-hub` stack provisions a disposable hub so you can exercise the whole template without an
@@ -137,4 +173,3 @@ subscription:
 
 Set `hub_subscription_id = <your subscription>` (equal to `spoke_subscription_id`) in the 10-network
 and 20-firewall-rules configs. Then deploy the stacks in the normal order.
-

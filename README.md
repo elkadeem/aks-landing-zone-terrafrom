@@ -36,6 +36,7 @@ Each folder is a standalone Terraform stack with its own remote-state key.
 | `20-firewall-rules` | IP Group + rule collection group added to the existing hub firewall policy. |
 | `30-supporting-services` | ACR, Storage, Key Vault, user-assigned managed identity (all private). |
 | `40-aks` | Private AKS cluster (overlay + Cilium, UDR, Workload Identity) and cluster RBAC. |
+| `50-api-management` | Optional API Management Standard v2 instance with outbound integration to a dedicated hub subnet. |
 | `deploy.azcli` | Simple Azure CLI + bash script that logs in and applies every stack in order. |
 
 ## Prerequisites
@@ -85,6 +86,23 @@ Or use the helper script after editing its variables:
 ```bash
 bash deploy.azcli
 ```
+
+### Optional API Management
+
+API Management is intentionally excluded from the default deployment loop. After the environment
+and hub are available, configure `config/<environment>/50-api-management.tfvars`, including a real
+publisher email and an unused `/24` in the hub VNet, then deploy the standalone stack:
+
+```bash
+terraform -chdir=50-api-management init "${BACKEND[@]}"
+terraform -chdir=50-api-management plan \
+  -var-file="../config/dev/50-api-management.tfvars"
+terraform -chdir=50-api-management apply \
+  -var-file="../config/dev/50-api-management.tfvars"
+```
+
+Standard v2 VNet integration is outbound only: APIM can reach private backends in the hub and
+peered networks, while its gateway, management, and developer portal endpoints remain public.
 
 ## Connect to the cluster
 
