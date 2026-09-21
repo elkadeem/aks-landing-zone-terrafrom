@@ -4,7 +4,7 @@ prefix              = "example"
 environment         = "demo"
 
 apim_name      = "apim-example-demo"
-publisher_name = "EXAMPLE"
+publisher_name = "Example Organization"
 
 # Replace this address before deploying.
 publisher_email = "api-admin@example.com"
